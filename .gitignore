@@ -1,0 +1,46 @@
+﻿# =========================
+# Environment / Secrets
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# Python
+# =========================
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+**/.venv/
+venv/
+**/venv/
+
+# Django
+*.log
+staticfiles/
+**/staticfiles/
+media/
+**/media/
+
+# =========================
+# Node / Next.js
+# =========================
+node_modules/
+**/node_modules/
+.next/
+**/.next/
+out/
+
+# =========================
+# IDE
+# =========================
+.vscode/
+.idea/
+
+# =========================
+# OS
+# =========================
+Thumbs.db
+.DS_Store

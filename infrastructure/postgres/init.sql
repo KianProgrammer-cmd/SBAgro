@@ -1,0 +1,2 @@
+-- Placeholder for any bootstrap SQL (extensions, roles) needed on first run.
+-- CREATE EXTENSION IF NOT EXISTS pg_trgm;
