@@ -1,8 +1,8 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
-import { getMyNotifications, markNotificationRead } from "@/lib/api";
 import SellerNav from "@/components/SellerNav";
+import { getMyNotifications } from "@/lib/api";
 
 type Notification = {
   id: number;
@@ -27,40 +27,24 @@ export default function SellerNotificationsPage() {
       setError("");
 
       const data = await getMyNotifications();
+
       setNotifications(data?.results || data || []);
     } catch (err: any) {
+      console.error(err);
       setError(
-        err?.message || "دریافت پیام‌ها ناموفق بود."
+        err?.message || "دریافت اعلان‌ها ناموفق بود."
       );
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleOpen(notification: Notification) {
-    if (notification.is_read) return;
-
-    try {
-      await markNotificationRead(notification.id);
-
-      setNotifications((prev) =>
-        prev.map((n) =>
-          n.id === notification.id ? { ...n, is_read: true } : n
-        )
-      );
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
-
   return (
     <main
       dir="rtl"
       className="min-h-screen bg-[#07130d] px-4 py-8 text-white md:px-8"
     >
-      <div className="mx-auto max-w-4xl">
+      <div className="mx-auto max-w-5xl">
 
         <div className="mb-6">
           <p className="mb-2 text-sm text-green-400">
@@ -72,9 +56,7 @@ export default function SellerNotificationsPage() {
           </h1>
 
           <p className="mt-2 text-white/50">
-            {unreadCount > 0
-              ? `${unreadCount.toLocaleString("fa-IR")} پیام خوانده‌نشده دارید`
-              : "همه‌ی پیام‌ها خوانده شده‌اند"}
+            اعلان‌های مربوط به محصولات و سفارش‌های شما
           </p>
         </div>
 
@@ -89,48 +71,65 @@ export default function SellerNotificationsPage() {
         {loading ? (
           <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-12 text-center">
             <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-white/10 border-t-green-500" />
-            <p className="text-white/60">در حال دریافت پیام‌ها...</p>
+            <p className="text-white/60">
+              در حال دریافت اعلان‌ها...
+            </p>
           </div>
         ) : notifications.length === 0 ? (
           <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-16 text-center">
-            <div className="mb-4 text-5xl">🔔</div>
-            <h2 className="text-xl font-bold">پیامی وجود ندارد</h2>
+            <div className="mb-4 text-5xl">
+              🔔
+            </div>
+
+            <h2 className="text-xl font-bold">
+              پیامی وجود ندارد
+            </h2>
+
             <p className="mt-2 text-sm text-white/40">
-              اعلان‌های مربوط به تأیید یا رد محصولات اینجا نمایش داده می‌شود.
+              اعلان‌های مربوط به تأیید یا رد محصولات و سفارش‌های شما اینجا نمایش داده می‌شود.
             </p>
           </div>
         ) : (
           <div className="space-y-3">
             {notifications.map((notification) => (
-              <button
+              <div
                 key={notification.id}
-                onClick={() => handleOpen(notification)}
-                className={`block w-full rounded-2xl border p-5 text-right transition ${
+                className={`rounded-2xl border p-5 transition ${
                   notification.is_read
-                    ? "border-white/10 bg-white/[0.02]"
+                    ? "border-white/10 bg-white/[0.03]"
                     : "border-green-500/30 bg-green-500/[0.06]"
                 }`}
               >
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <h3 className="font-black">
-                    {notification.title}
-                  </h3>
+                <div className="flex items-start gap-4">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-green-500/10 text-xl">
+                    🔔
+                  </div>
 
-                  {!notification.is_read && (
-                    <span className="shrink-0 rounded-full bg-green-500 px-2.5 py-1 text-xs font-bold text-white">
-                      جدید
-                    </span>
-                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h2 className="font-bold">
+                        {notification.title}
+                      </h2>
+
+                      {!notification.is_read && (
+                        <span className="rounded-full bg-green-500/10 px-3 py-1 text-xs font-bold text-green-400">
+                          جدید
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="mt-2 text-sm leading-7 text-white/60">
+                      {notification.message}
+                    </p>
+
+                    <p className="mt-3 text-xs text-white/30">
+                      {new Date(
+                        notification.created_at
+                      ).toLocaleString("fa-IR")}
+                    </p>
+                  </div>
                 </div>
-
-                <p className="whitespace-pre-line text-sm leading-6 text-white/60">
-                  {notification.message}
-                </p>
-
-                <p className="mt-3 text-xs text-white/30">
-                  {new Date(notification.created_at).toLocaleString("fa-IR")}
-                </p>
-              </button>
+              </div>
             ))}
           </div>
         )}

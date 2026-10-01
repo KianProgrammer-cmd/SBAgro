@@ -83,12 +83,27 @@ class Product(models.Model):
     is_approved = models.BooleanField(
         default=False,
         verbose_name="تأیید شده",
-        help_text="محصول باید توسط مدیر تأیید شود تا در سایت نمایش داده شود.",
     )
 
     is_active = models.BooleanField(
         default=True,
         verbose_name="فعال",
+    )
+
+    # -----------------------------
+    # اطلاعات رد محصول
+    # -----------------------------
+
+    rejection_reason = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="دلیل رد محصول",
+    )
+
+    rejected_at = models.DateTimeField(
+        blank=True,
+        null=True,
+        verbose_name="تاریخ رد",
     )
 
     created_at = models.DateTimeField(
@@ -103,8 +118,10 @@ class Product(models.Model):
 
     class Meta:
         db_table = "products"
+
         verbose_name = "محصول"
         verbose_name_plural = "محصولات"
+
         ordering = ["-created_at"]
 
         indexes = [

@@ -1,4 +1,5 @@
-﻿from rest_framework import generics, permissions
+﻿from django.conf import settings
+from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -38,12 +39,14 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     throttle_scope = 'login'
 
     def post(self, request, *args, **kwargs):
-        captcha_token = request.data.get('captcha_token')
+        # کپچا فقط در محیط production بررسی می‌شود تا تست لوکال مسدود نشود
+        if not settings.DEBUG:
+            captcha_token = request.data.get('captcha_token')
 
-        verify_turnstile(
-            captcha_token,
-            request.META.get('REMOTE_ADDR'),
-        )
+            verify_turnstile(
+                captcha_token,
+                request.META.get('REMOTE_ADDR'),
+            )
 
         return super().post(request, *args, **kwargs)
 

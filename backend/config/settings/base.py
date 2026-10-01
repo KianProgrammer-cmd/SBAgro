@@ -4,13 +4,19 @@ Shared between development and production.
 """
 from datetime import timedelta
 from pathlib import Path
+from urllib.parse import urlparse, unquote
+
 from decouple import config, Csv
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
+ALLOWED_HOSTS = config(
+    'ALLOWED_HOSTS',
+    default='localhost,127.0.0.1',
+    cast=Csv()
+)
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -20,13 +26,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    # Third party
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
     'django_filters',
 
-    # Local apps
     'core',
     'users',
     'sellers',
@@ -75,24 +79,56 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = 'config.asgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME', default='sbagro'),
-        'USER': config('DB_USER', default='sb_agro_user'),
-        'PASSWORD': config('DB_PASSWORD', default=''),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='5432'),
+
+# ---------- DATABASE ----------
+DATABASE_URL = config('DATABASE_URL', default='')
+
+if DATABASE_URL:
+    parsed_db = urlparse(DATABASE_URL)
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': unquote(parsed_db.path.lstrip('/')),
+            'USER': unquote(parsed_db.username or ''),
+            'PASSWORD': unquote(parsed_db.password or ''),
+            'HOST': parsed_db.hostname or '',
+            'PORT': str(parsed_db.port or 5432),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': config('DB_NAME', default='sbagro'),
+            'USER': config('DB_USER', default='sb_agro_user'),
+            'PASSWORD': config('DB_PASSWORD', default=''),
+            'HOST': config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='5432'),
+        }
+    }
+
 
 AUTH_USER_MODEL = 'users.User'
 
 AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', 'OPTIONS': {'min_length': 10}},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+    {
+        'NAME':
+        'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'
+    },
+    {
+        'NAME':
+        'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {'min_length': 10},
+    },
+    {
+        'NAME':
+        'django.contrib.auth.password_validation.CommonPasswordValidator'
+    },
+    {
+        'NAME':
+        'django.contrib.auth.password_validation.NumericPasswordValidator'
+    },
 ]
 
 LANGUAGE_CODE = 'fa'
@@ -102,10 +138,12 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
 
 # ---------- REST FRAMEWORK ----------
 REST_FRAMEWORK = {
@@ -117,7 +155,9 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'core.pagination.StandardResultsPagination',
     'PAGE_SIZE': 20,
-    'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',),
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ),
     'DEFAULT_THROTTLE_CLASSES': (
         'rest_framework.throttling.ScopedRateThrottle',
     ),
@@ -128,6 +168,7 @@ REST_FRAMEWORK = {
     },
     'EXCEPTION_HANDLER': 'core.exceptions.custom_exception_handler',
 }
+
 
 # ---------- JWT ----------
 SIMPLE_JWT = {
@@ -140,13 +181,18 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
+
 # ---------- CORS ----------
-CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:3000', cast=Csv())
+CORS_ALLOWED_ORIGINS = config(
+    'CORS_ALLOWED_ORIGINS',
+    default='http://localhost:3000',
+    cast=Csv()
+)
+
 CORS_ALLOW_CREDENTIALS = True
 
+
 # ---------- CACHE ----------
-# Development-friendly cache backend.
-# No Redis required.
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
@@ -154,18 +200,40 @@ CACHES = {
     }
 }
 
+
 # ---------- PAYMENT GATEWAYS ----------
-ZARINPAL_MERCHANT_ID = config('ZARINPAL_MERCHANT_ID', default='')
-ZARINPAL_SANDBOX = config('ZARINPAL_SANDBOX', default=True, cast=bool)
+ZARINPAL_MERCHANT_ID = config(
+    'ZARINPAL_MERCHANT_ID',
+    default=''
+)
 
-PAYPAL_CLIENT_ID = config('PAYPAL_CLIENT_ID', default='')
-PAYPAL_CLIENT_SECRET = config('PAYPAL_CLIENT_SECRET', default='')
-PAYPAL_MODE = config('PAYPAL_MODE', default='sandbox')
+ZARINPAL_SANDBOX = config(
+    'ZARINPAL_SANDBOX',
+    default=True,
+    cast=bool
+)
 
-FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
+PAYPAL_CLIENT_ID = config(
+    'PAYPAL_CLIENT_ID',
+    default=''
+)
 
-# ---------- CLOUDFLARE TURNSTILE ----------
+PAYPAL_CLIENT_SECRET = config(
+    'PAYPAL_CLIENT_SECRET',
+    default=''
+)
 
-# ---------- CLOUDFLARE TURNSTILE ----------
-TURNSTILE_SECRET_KEY = config('TURNSTILE_SECRET_KEY', default='')
+PAYPAL_MODE = config(
+    'PAYPAL_MODE',
+    default='sandbox'
+)
 
+FRONTEND_URL = config(
+    'FRONTEND_URL',
+    default='http://localhost:3000'
+)
+
+TURNSTILE_SECRET_KEY = config(
+    'TURNSTILE_SECRET_KEY',
+    default=''
+)

@@ -1,21 +1,46 @@
 from rest_framework import generics, permissions
+
 from .models import Province, City
-from .serializers import ProvinceSerializer, CitySerializer
+from .serializers import (
+    ProvinceSerializer,
+    CitySerializer,
+)
 
 
 class ProvinceListView(generics.ListAPIView):
-    queryset = Province.objects.all()
+    """
+    دریافت تمام استان‌های ایران
+    """
+
+    queryset = Province.objects.all().order_by("name")
     serializer_class = ProvinceSerializer
     permission_classes = [permissions.AllowAny]
 
 
 class CityListView(generics.ListAPIView):
+    """
+    دریافت شهرهای یک استان
+
+    مثال:
+
+    /api/locations/cities/?province=1
+    """
+
     serializer_class = CitySerializer
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        qs = City.objects.all()
-        province_id = self.request.query_params.get('province')
+        queryset = City.objects.select_related(
+            "province"
+        ).order_by("name")
+
+        province_id = self.request.query_params.get(
+            "province"
+        )
+
         if province_id:
-            qs = qs.filter(province_id=province_id)
-        return qs
+            queryset = queryset.filter(
+                province_id=province_id
+            )
+
+        return queryset

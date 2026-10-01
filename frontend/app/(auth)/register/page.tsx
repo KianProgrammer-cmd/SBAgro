@@ -1,20 +1,20 @@
-﻿'use client';
+﻿"use client";
 
-import { useState } from 'react';
-import { Turnstile } from '@marsidev/react-turnstile';
-import { register } from '@/lib/auth';
+import { useState } from "react";
+import Captcha from "@/components/Captcha";
+import { register } from "@/lib/auth";
 
 export default function RegisterPage() {
   const [form, setForm] = useState({
-    username: '',
-    email: '',
-    mobile: '',
-    password: '',
-    role: 'BUYER',
+    username: "",
+    email: "",
+    mobile: "",
+    password: "",
+    role: "BUYER",
   });
 
-  const [captchaToken, setCaptchaToken] = useState('');
-  const [error, setError] = useState('');
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   function updateField(
@@ -30,10 +30,10 @@ export default function RegisterPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    setError('');
+    setError("");
 
     if (!captchaToken) {
-      setError('لطفاً کپچا را تأیید کنید.');
+      setError("لطفاً کپچا را تأیید کنید.");
       return;
     }
 
@@ -42,20 +42,20 @@ export default function RegisterPage() {
     try {
       await register({
         ...form,
-        role: form.role as 'BUYER' | 'SELLER',
+        role: form.role as "BUYER" | "SELLER",
         captchaToken,
       });
 
-      window.location.href = '/login';
+      window.location.href = "/login";
     } catch (err: any) {
       console.error(err);
 
       setError(
         err?.message ||
-          'ثبت‌نام ناموفق بود. اطلاعات را بررسی کنید.'
+          "ثبت‌نام ناموفق بود. اطلاعات را بررسی کنید."
       );
 
-      setCaptchaToken('');
+      setCaptchaToken("");
     } finally {
       setLoading(false);
     }
@@ -67,9 +67,9 @@ export default function RegisterPage() {
       className="min-h-screen flex items-center justify-center px-4 py-10"
     >
       <div className="w-full max-w-md">
-        <div className="rounded-3xl border border-white/10 bg-surface/80 backdrop-blur-xl p-8 shadow-2xl">
+        <div className="rounded-3xl border border-white/10 bg-surface/80 p-8 shadow-2xl backdrop-blur-xl">
 
-          <div className="text-center mb-8">
+          <div className="mb-8 text-center">
             <h1 className="text-3xl font-bold">
               ثبت‌نام در SBcropmarket
             </h1>
@@ -84,8 +84,9 @@ export default function RegisterPage() {
             className="space-y-5"
           >
 
+            {/* Username */}
             <div>
-              <label className="block mb-2 text-sm font-medium">
+              <label className="mb-2 block text-sm font-medium">
                 نام کاربری
               </label>
 
@@ -93,17 +94,18 @@ export default function RegisterPage() {
                 type="text"
                 value={form.username}
                 onChange={(e) =>
-                  updateField('username', e.target.value)
+                  updateField("username", e.target.value)
                 }
                 required
                 autoComplete="username"
-                className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-green-500 transition"
+                className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 outline-none transition focus:border-green-500"
                 placeholder="نام کاربری"
               />
             </div>
 
+            {/* Email */}
             <div>
-              <label className="block mb-2 text-sm font-medium">
+              <label className="mb-2 block text-sm font-medium">
                 ایمیل
               </label>
 
@@ -111,17 +113,18 @@ export default function RegisterPage() {
                 type="email"
                 value={form.email}
                 onChange={(e) =>
-                  updateField('email', e.target.value)
+                  updateField("email", e.target.value)
                 }
                 required
                 autoComplete="email"
-                className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-green-500 transition"
+                className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 outline-none transition focus:border-green-500"
                 placeholder="example@email.com"
               />
             </div>
 
+            {/* Mobile */}
             <div>
-              <label className="block mb-2 text-sm font-medium">
+              <label className="mb-2 block text-sm font-medium">
                 شماره موبایل
               </label>
 
@@ -129,18 +132,19 @@ export default function RegisterPage() {
                 type="tel"
                 value={form.mobile}
                 onChange={(e) =>
-                  updateField('mobile', e.target.value)
+                  updateField("mobile", e.target.value)
                 }
                 required
                 autoComplete="tel"
                 dir="ltr"
-                className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-green-500 transition"
+                className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 outline-none transition focus:border-green-500"
                 placeholder="09123456789"
               />
             </div>
 
+            {/* Password */}
             <div>
-              <label className="block mb-2 text-sm font-medium">
+              <label className="mb-2 block text-sm font-medium">
                 رمز عبور
               </label>
 
@@ -148,26 +152,27 @@ export default function RegisterPage() {
                 type="password"
                 value={form.password}
                 onChange={(e) =>
-                  updateField('password', e.target.value)
+                  updateField("password", e.target.value)
                 }
                 required
                 autoComplete="new-password"
-                className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-green-500 transition"
+                className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 outline-none transition focus:border-green-500"
                 placeholder="حداقل ۱۰ کاراکتر"
               />
             </div>
 
+            {/* Role */}
             <div>
-              <label className="block mb-2 text-sm font-medium">
+              <label className="mb-2 block text-sm font-medium">
                 نوع حساب
               </label>
 
               <select
                 value={form.role}
                 onChange={(e) =>
-                  updateField('role', e.target.value)
+                  updateField("role", e.target.value)
                 }
-                className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-green-500 transition"
+                className="w-full rounded-xl border border-white/10 bg-black/20 bg-black/20 px-4 py-3 outline-none transition focus:border-green-500"
               >
                 <option value="BUYER">
                   خریدار
@@ -179,39 +184,40 @@ export default function RegisterPage() {
               </select>
             </div>
 
-            <div className="flex justify-center py-2">
-              <Turnstile
-                siteKey="0x4AAAAAAEbivMMRDkm0MtKN"
-                onSuccess={(token) => {
-                  setCaptchaToken(token);
-                  setError('');
-                }}
-                onExpire={() => {
-                  setCaptchaToken('');
-                }}
-                onError={() => {
-                  setCaptchaToken('');
-                  setError(
-                    'خطا در بارگذاری کپچا. دوباره تلاش کنید.'
-                  );
-                }}
-              />
-            </div>
+            {/* Cloudflare Turnstile */}
+            <Captcha
+              onSuccess={(token) => {
+                setCaptchaToken(token);
+                setError("");
+              }}
+              onExpire={() => {
+                setCaptchaToken("");
+                setError("اعتبار کپچا تمام شد. لطفاً دوباره تأیید کنید.");
+              }}
+              onError={() => {
+                setCaptchaToken("");
+                setError(
+                  "خطا در بارگذاری کپچا. دوباره تلاش کنید."
+                );
+              }}
+            />
 
+            {/* Error */}
             {error && (
               <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
                 {error}
               </div>
             )}
 
+            {/* Submit */}
             <button
               type="submit"
               disabled={loading || !captchaToken}
               className="w-full rounded-xl bg-green-600 px-4 py-3 font-bold transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading
-                ? 'در حال ثبت‌نام...'
-                : 'ایجاد حساب'}
+                ? "در حال ثبت‌نام..."
+                : "ایجاد حساب"}
             </button>
 
           </form>

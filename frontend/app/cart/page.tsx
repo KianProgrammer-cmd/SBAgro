@@ -1,75 +1,55 @@
-﻿'use client';
+﻿"use client";
 
-import { useEffect, useState } from 'react';
-import { apiFetch } from '@/lib/api';
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import {
+  getCart,
+  updateCartItem,
+  removeCartItem,
+  type Cart,
+} from "@/lib/api";
 
-type Product = {
-  id: number;
-  name?: string;
-  price_per_unit?: number;
-  image?: string;
-};
+function formatPrice(price: string | number) {
+  return Number(price).toLocaleString("fa-IR");
+}
 
-type CartItem = {
-  id: number;
-  product: number;
-  product_detail?: Product;
-  quantity: number;
-  subtotal: number;
-};
+function getImageUrl(image: string | null) {
+  if (!image) return null;
 
-type Cart = {
-  id: number;
-  items: CartItem[];
-  total: number;
-};
+  if (image.startsWith("http")) {
+    return image;
+  }
+
+  const apiUrl =
+    process.env.NEXT_PUBLIC_API_URL ||
+    "http://127.0.0.1:8000/api";
+
+  const baseUrl = apiUrl.replace(/\/api\/?$/, "");
+
+  return `${baseUrl}${image.startsWith("/") ? "" : "/"}${image}`;
+}
 
 export default function CartPage() {
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
+  const [updating, setUpdating] = useState<number | null>(null);
 
   async function loadCart() {
     try {
       setLoading(true);
-      setError('');
+      setError("");
 
-      const data = await apiFetch('/cart/');
+      const data = await getCart();
       setCart(data);
-    } catch (err) {
-      console.error('Cart error:', err);
-      setError('خطا در دریافت سبد خرید');
+    } catch (err: any) {
+      console.error(err);
+      setError(
+        err?.message ||
+          "خطا در دریافت سبد خرید"
+      );
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function updateQuantity(itemId: number, quantity: number) {
-    if (quantity < 1) return;
-
-    try {
-      await apiFetch(`/cart/items/${itemId}/`, {
-        method: 'PATCH',
-        body: JSON.stringify({ quantity }),
-      });
-
-      await loadCart();
-    } catch (err) {
-      console.error('Update cart error:', err);
-      setError('خطا در تغییر تعداد محصول');
-    }
-  }
-
-  async function removeItem(itemId: number) {
-    try {
-      await apiFetch(`/cart/items/${itemId}/`, {
-        method: 'DELETE',
-      });
-
-      await loadCart();
-    } catch (err) {
-      console.error('Remove cart item error:', err);
-      setError('خطا در حذف محصول');
     }
   }
 
@@ -77,13 +57,64 @@ export default function CartPage() {
     loadCart();
   }, []);
 
+  async function changeQuantity(
+    itemId: number,
+    quantity: number
+  ) {
+    if (quantity < 1) return;
+
+    try {
+      setUpdating(itemId);
+
+      const updated = await updateCartItem(
+        itemId,
+        quantity
+      );
+
+      setCart(updated);
+    } catch (err: any) {
+      console.error(err);
+
+      setError(
+        err?.message ||
+          "خطا در تغییر تعداد محصول"
+      );
+    } finally {
+      setUpdating(null);
+    }
+  }
+
+  async function removeItem(itemId: number) {
+    try {
+      setUpdating(itemId);
+
+      await removeCartItem(itemId);
+
+      await loadCart();
+    } catch (err: any) {
+      console.error(err);
+
+      setError(
+        err?.message ||
+          "خطا در حذف محصول"
+      );
+    } finally {
+      setUpdating(null);
+    }
+  }
+
   if (loading) {
     return (
-      <main dir="rtl" className="max-w-6xl mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-8">سبد خرید</h1>
+      <main
+        dir="rtl"
+        className="min-h-screen bg-black text-white flex items-center justify-center"
+      >
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-white/10 border-t-green-500" />
 
-        <div className="rounded-2xl border border-white/10 p-8 text-center">
-          <p>در حال بارگذاری سبد خرید...</p>
+          <p className="text-white/60">
+            در حال دریافت سبد خرید...
+          </p>
         </div>
       </main>
     );
@@ -91,146 +122,361 @@ export default function CartPage() {
 
   if (error && !cart) {
     return (
-      <main dir="rtl" className="max-w-6xl mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-8">سبد خرید</h1>
+      <main
+        dir="rtl"
+        className="min-h-screen bg-black text-white px-4 py-12"
+      >
+        <div className="mx-auto max-w-3xl rounded-3xl border border-red-500/20 bg-[#0b0b0b] p-8 text-center">
+          <div className="mb-4 text-5xl">
+            ⚠️
+          </div>
 
-        <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-8 text-center">
-          <p className="text-red-400 mb-4">{error}</p>
+          <h1 className="text-xl font-bold">
+            خطا در دریافت سبد خرید
+          </h1>
+
+          <p className="mt-3 text-sm text-red-300">
+            {error}
+          </p>
 
           <button
             onClick={loadCart}
-            className="rounded-lg bg-primary px-5 py-2 font-semibold"
+            className="mt-6 rounded-xl bg-green-600 px-6 py-3 font-bold transition hover:bg-green-700"
           >
-            تلاش مجدد
+            تلاش دوباره
           </button>
         </div>
       </main>
     );
   }
 
-  if (!cart || cart.items.length === 0) {
+  const items = cart?.items || [];
+
+  if (items.length === 0) {
     return (
-      <main dir="rtl" className="max-w-6xl mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-8">سبد خرید</h1>
+      <main
+        dir="rtl"
+        className="min-h-screen bg-black text-white"
+      >
+        <div className="mx-auto max-w-6xl px-4 py-12">
 
-        <div className="rounded-2xl border border-white/10 p-12 text-center">
-          <div className="text-6xl mb-5">🛒</div>
+          <div className="mb-10">
+            <h1 className="text-3xl font-black">
+              سبد خرید
+            </h1>
 
-          <h2 className="text-xl font-bold mb-2">
-            سبد خرید شما خالی است
-          </h2>
+            <p className="mt-2 text-white/50">
+              محصولات انتخاب‌شده شما
+            </p>
+          </div>
 
-          <p className="opacity-60">
-            هنوز محصولی به سبد خرید اضافه نکرده‌اید.
-          </p>
+          <div className="rounded-[2rem] border border-white/10 bg-[#090909] px-6 py-20 text-center shadow-2xl">
+
+            <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-white/5 text-5xl">
+              🛒
+            </div>
+
+            <h2 className="mt-6 text-2xl font-bold">
+              سبد خرید شما خالی است
+            </h2>
+
+            <p className="mt-3 text-white/50">
+              هنوز محصولی به سبد خرید اضافه نکرده‌اید.
+            </p>
+
+            <Link
+              href="/products"
+              className="mt-8 inline-flex rounded-xl bg-green-600 px-7 py-3 font-bold transition hover:bg-green-700"
+            >
+              مشاهده محصولات
+            </Link>
+          </div>
         </div>
       </main>
     );
   }
 
   return (
-    <main dir="rtl" className="max-w-6xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-8">سبد خرید</h1>
+    <main
+      dir="rtl"
+      className="min-h-screen bg-black text-white"
+    >
+      <div className="mx-auto max-w-7xl px-4 py-8 md:py-12">
 
-      {error && (
-        <div className="mb-5 rounded-xl border border-red-500/20 bg-red-500/5 p-4">
-          <p className="text-red-400">{error}</p>
+        {/* Header */}
+
+        <div className="mb-8">
+          <h1 className="text-3xl font-black md:text-4xl">
+            سبد خرید
+          </h1>
+
+          <p className="mt-2 text-white/50">
+            {items.length.toLocaleString("fa-IR")} محصول در سبد خرید شما
+          </p>
         </div>
-      )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <section className="lg:col-span-2 space-y-4">
-          {cart.items.map((item) => {
-            const product = item.product_detail;
+        {error && (
+          <div className="mb-6 rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-300">
+            {error}
+          </div>
+        )}
 
-            return (
-              <div
-                key={item.id}
-                className="rounded-2xl border border-white/10 bg-surface p-5"
-              >
-                <div className="flex items-center justify-between gap-5">
-                  <div className="flex-1">
-                    <h2 className="text-lg font-bold">
-                      {product?.name || `محصول #${item.product}`}
-                    </h2>
+        <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
 
-                    {product?.price_per_unit !== undefined && (
-                      <p className="text-sm opacity-60 mt-2">
-                        قیمت واحد:{' '}
-                        {product.price_per_unit.toLocaleString('fa-IR')} تومان
-                      </p>
-                    )}
+          {/* Products */}
 
-                    <p className="font-semibold mt-3">
-                      مبلغ:{' '}
-                      {Number(item.subtotal).toLocaleString('fa-IR')} تومان
-                    </p>
-                  </div>
+          <section className="space-y-4">
 
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() =>
-                        updateQuantity(item.id, item.quantity + 1)
-                      }
-                      className="w-9 h-9 rounded-lg border border-white/10 hover:bg-white/5"
-                    >
-                      +
-                    </button>
+            {items.map((item) => {
+              const imageUrl = getImageUrl(
+                item.product_detail.image
+              );
 
-                    <span className="min-w-8 text-center font-bold">
-                      {item.quantity}
-                    </span>
+              return (
+                <div
+                  key={item.id}
+                  className="group rounded-3xl border border-white/10 bg-[#0a0a0a] p-4 shadow-xl transition hover:border-white/20"
+                >
+                  <div className="flex flex-col gap-5 sm:flex-row">
 
-                    <button
-                      onClick={() =>
-                        updateQuantity(item.id, item.quantity - 1)
-                      }
-                      disabled={item.quantity <= 1}
-                      className="w-9 h-9 rounded-lg border border-white/10 hover:bg-white/5 disabled:opacity-30"
-                    >
-                      −
-                    </button>
+                    {/* Image */}
 
-                    <button
-                      onClick={() => removeItem(item.id)}
-                      className="mr-3 rounded-lg border border-red-500/20 px-3 py-2 text-red-400 hover:bg-red-500/10"
-                    >
-                      حذف
-                    </button>
+                    <div className="relative h-36 w-full shrink-0 overflow-hidden rounded-2xl bg-[#111] sm:h-32 sm:w-32">
+
+                      {imageUrl ? (
+                        <img
+                          src={imageUrl}
+                          alt={
+                            item.product_detail.title
+                          }
+                          className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-4xl">
+                          🌱
+                        </div>
+                      )}
+
+                    </div>
+
+                    {/* Info */}
+
+                    <div className="flex min-w-0 flex-1 flex-col justify-between">
+
+                      <div>
+                        <div className="flex items-start justify-between gap-3">
+
+                          <div>
+                            <h2 className="text-lg font-bold">
+                              {
+                                item.product_detail
+                                  .title
+                              }
+                            </h2>
+
+                            <p className="mt-1 text-sm text-white/40">
+                              فروشنده:{" "}
+                              {
+                                item.product_detail
+                                  .seller_name
+                              }
+                            </p>
+                          </div>
+
+                          <button
+                            onClick={() =>
+                              removeItem(item.id)
+                            }
+                            disabled={
+                              updating === item.id
+                            }
+                            className="rounded-xl p-2 text-white/40 transition hover:bg-red-500/10 hover:text-red-400 disabled:opacity-40"
+                            title="حذف محصول"
+                          >
+                            🗑️
+                          </button>
+
+                        </div>
+                      </div>
+
+                      {/* Bottom */}
+
+                      <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+
+                        {/* Quantity */}
+
+                        <div>
+                          <p className="mb-2 text-xs text-white/40">
+                            تعداد
+                          </p>
+
+                          <div className="flex w-fit items-center overflow-hidden rounded-xl border border-white/10 bg-[#111]">
+
+                            <button
+                              onClick={() =>
+                                changeQuantity(
+                                  item.id,
+                                  item.quantity + 1
+                                )
+                              }
+                              disabled={
+                                updating === item.id
+                              }
+                              className="h-10 w-10 text-lg transition hover:bg-white/10 disabled:opacity-40"
+                            >
+                              +
+                            </button>
+
+                            <div className="flex h-10 min-w-12 items-center justify-center border-x border-white/10 px-3 font-bold">
+                              {item.quantity.toLocaleString(
+                                "fa-IR"
+                              )}
+                            </div>
+
+                            <button
+                              onClick={() =>
+                                changeQuantity(
+                                  item.id,
+                                  item.quantity - 1
+                                )
+                              }
+                              disabled={
+                                updating === item.id ||
+                                item.quantity <= 1
+                              }
+                              className="h-10 w-10 text-lg transition hover:bg-white/10 disabled:opacity-30"
+                            >
+                              −
+                            </button>
+
+                          </div>
+                        </div>
+
+                        {/* Price */}
+
+                        <div className="text-right sm:text-left">
+
+                          <p className="text-xs text-white/40">
+                            قیمت
+                          </p>
+
+                          <p className="mt-1 text-xl font-black text-green-400">
+                            {formatPrice(
+                              item.subtotal
+                            )}
+                            <span className="mr-1 text-xs font-normal text-white/50">
+                              تومان
+                            </span>
+                          </p>
+
+                        </div>
+
+                      </div>
+                    </div>
                   </div>
                 </div>
+              );
+            })}
+
+          </section>
+
+          {/* Summary */}
+
+          <aside className="lg:sticky lg:top-6 lg:h-fit">
+
+            <div className="rounded-3xl border border-white/10 bg-[#090909] p-6 shadow-2xl">
+
+              <h2 className="text-xl font-black">
+                خلاصه سفارش
+              </h2>
+
+              <div className="my-6 h-px bg-white/10" />
+
+              <div className="space-y-4 text-sm">
+
+                <div className="flex justify-between">
+                  <span className="text-white/50">
+                    تعداد کالا
+                  </span>
+
+                  <span className="font-bold">
+                    {items.length.toLocaleString(
+                      "fa-IR"
+                    )}
+                  </span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span className="text-white/50">
+                    مبلغ کالاها
+                  </span>
+
+                  <span>
+                    {formatPrice(
+                      cart?.total || 0
+                    )}{" "}
+                    تومان
+                  </span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span className="text-white/50">
+                    هزینه ارسال
+                  </span>
+
+                  <span className="text-green-400">
+                    محاسبه در مرحله بعد
+                  </span>
+                </div>
+
               </div>
-            );
-          })}
-        </section>
 
-        <aside className="h-fit rounded-2xl border border-white/10 bg-surface p-6">
-          <h2 className="text-xl font-bold mb-6">
-            خلاصه سفارش
-          </h2>
+              <div className="my-6 h-px bg-white/10" />
 
-          <div className="flex justify-between mb-4 opacity-70">
-            <span>تعداد کالا</span>
-            <span>{cart.items.length}</span>
-          </div>
+              <div className="flex items-center justify-between">
 
-          <div className="border-t border-white/10 pt-5 flex justify-between items-center">
-            <span className="font-bold">مبلغ نهایی</span>
+                <span className="font-bold">
+                  مبلغ نهایی
+                </span>
 
-            <span className="text-xl font-bold">
-              {Number(cart.total).toLocaleString('fa-IR')} تومان
-            </span>
-          </div>
+                <div className="text-left">
 
-          <button
-            className="w-full mt-6 rounded-xl bg-primary py-3 font-bold"
-            onClick={() => {
-              window.location.href = '/checkout';
-            }}
-          >
-            ادامه و پرداخت
-          </button>
-        </aside>
+                  <div className="text-2xl font-black text-green-400">
+                    {formatPrice(
+                      cart?.total || 0
+                    )}
+                  </div>
+
+                  <div className="text-xs text-white/40">
+                    تومان
+                  </div>
+
+                </div>
+
+              </div>
+
+              <Link
+                href="/checkout"
+                className="mt-6 flex w-full items-center justify-center rounded-2xl bg-green-600 px-5 py-4 font-black transition hover:bg-green-700 active:scale-[0.98]"
+              >
+                ادامه و ثبت سفارش
+              </Link>
+
+              <Link
+                href="/products"
+                className="mt-3 flex w-full items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white/70 transition hover:bg-white/10 hover:text-white"
+              >
+                ادامه خرید
+              </Link>
+
+              <div className="mt-6 rounded-2xl border border-green-500/10 bg-green-500/5 p-4 text-xs leading-6 text-white/50">
+                🔒 پرداخت امن پس از ثبت سفارش انجام می‌شود.
+              </div>
+
+            </div>
+          </aside>
+
+        </div>
       </div>
     </main>
   );

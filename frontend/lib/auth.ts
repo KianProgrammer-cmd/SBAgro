@@ -14,12 +14,25 @@ export async function login(
     }),
   });
 
+  console.log('LOGIN API RESPONSE:', data);
+
+  if (!data?.access) {
+    throw new Error(
+      'سرور Access Token ارسال نکرد. پاسخ سرور را در Console بررسی کنید.'
+    );
+  }
+
   if (typeof window !== 'undefined') {
     localStorage.setItem('access_token', data.access);
 
     if (data.refresh) {
       localStorage.setItem('refresh_token', data.refresh);
     }
+
+    console.log(
+      'ACCESS TOKEN SAVED:',
+      !!localStorage.getItem('access_token')
+    );
   }
 
   return data;
@@ -35,7 +48,7 @@ type RegisterData = {
 };
 
 export async function register(data: RegisterData) {
-  const response = await apiFetch('/auth/register/', {
+  return apiFetch('/auth/register/', {
     method: 'POST',
     body: JSON.stringify({
       username: data.username,
@@ -46,8 +59,6 @@ export async function register(data: RegisterData) {
       captcha_token: data.captchaToken,
     }),
   });
-
-  return response;
 }
 
 export function logout() {
